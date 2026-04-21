@@ -1,0 +1,155 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { MATCHES_PER_MONTH, startOfMonthUTC, startOfNextMonthUTC } from "@/lib/utils";
+
+const createSchema = z.object({
+  opponentId: z.string().min(1, "Elegí un rival"),
+  scheduledAt: z
+    .string()
+    .min(1, "Elegí fecha y hora")
+    .transform((v) => new Date(v))
+    .refine((d) => !Number.isNaN(d.getTime()), "Fecha inválida")
+    .refine((d) => d.getTime() > Date.now() - 1000 * 60 * 5, "La fecha debe ser futura"),
+  location: z.string().max(120).optional().nullable(),
+});
+
+export type CreateResult =
+  | { ok: true; matchId: string }
+  | { ok: false; error: string };
+
+export async function createMatchAction(formData: FormData): Promise<CreateResult> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "No autenticado" };
+  const userId = session.user.id;
+
+  const parsed = createSchema.safeParse({
+    opponentId: formData.get("opponentId"),
+    scheduledAt: formData.get("scheduledAt"),
+    location: formData.get("location"),
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+  }
+  const { opponentId, scheduledAt, location } = parsed.data;
+  if (opponentId === userId) return { ok: false, error: "No podés jugar contra vos mismo" };
+
+  const opponent = await prisma.user.findUnique({ where: { id: opponentId } });
+  if (!opponent) return { ok: false, error: "Rival no encontrado" };
+
+  const now = new Date();
+  const monthStart = startOfMonthUTC(now);
+  const monthEnd = startOfNextMonthUTC(now);
+
+  const used = await prisma.match.count({
+    where: {
+      schedulerId: userId,
+      status: { in: ["SCHEDULED", "COMPLETED"] },
+      createdAt: { gte: monthStart, lt: monthEnd },
+    },
+  });
+
+  if (used >= MATCHES_PER_MONTH) {
+    return {
+      ok: false,
+      error: `Ya agendaste ${MATCHES_PER_MONTH} partidos este mes. Probá el próximo mes.`,
+    };
+  }
+
+  const match = await prisma.match.create({
+    data: {
+      schedulerId: userId,
+      homeId: userId,
+      awayId: opponentId,
+      scheduledAt,
+      location: location ?? null,
+    },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/matches");
+  return { ok: true, matchId: match.id };
+}
+
+const scoreSchema = z.object({
+  matchId: z.string(),
+  sets: z
+    .array(
+      z.object({
+        home: z.number().int().min(0).max(7),
+        away: z.number().int().min(0).max(7),
+      }),
+    )
+    .min(1)
+    .max(5),
+});
+
+export async function reportResultAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false as const, error: "No autenticado" };
+  const userId = session.user.id;
+
+  const raw = {
+    matchId: String(formData.get("matchId") ?? ""),
+    sets: JSON.parse(String(formData.get("sets") ?? "[]")),
+  };
+  const parsed = scoreSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false as const, error: "Resultado inválido" };
+
+  const { matchId, sets } = parsed.data;
+  const match = await prisma.match.findUnique({ where: { id: matchId } });
+  if (!match) return { ok: false as const, error: "Partido no existe" };
+  if (match.homeId !== userId && match.awayId !== userId) {
+    return { ok: false as const, error: "No sos parte de este partido" };
+  }
+
+  let homeSets = 0;
+  let awaySets = 0;
+  for (const s of sets) {
+    if (s.home === s.away) return { ok: false as const, error: "No hay sets empatados" };
+    if (s.home > s.away) homeSets += 1;
+    else awaySets += 1;
+  }
+  if (homeSets === awaySets) {
+    return { ok: false as const, error: "Tiene que haber un ganador" };
+  }
+  const winnerId = homeSets > awaySets ? match.homeId : match.awayId;
+
+  await prisma.match.update({
+    where: { id: matchId },
+    data: {
+      status: "COMPLETED",
+      winnerId,
+      scoreJson: JSON.stringify(sets),
+    },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/matches");
+  revalidatePath(`/dashboard/matches/${matchId}`);
+  revalidatePath("/dashboard/leaderboard");
+  return { ok: true as const };
+}
+
+export async function cancelMatchAction(matchId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return;
+  const userId = session.user.id;
+
+  const match = await prisma.match.findUnique({ where: { id: matchId } });
+  if (!match) return;
+  if (match.schedulerId !== userId) return;
+  if (match.status !== "SCHEDULED") return;
+
+  await prisma.match.update({
+    where: { id: matchId },
+    data: { status: "CANCELLED" },
+  });
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/matches");
+  redirect("/dashboard/matches");
+}

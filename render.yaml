@@ -1,0 +1,51 @@
+# Render Blueprint — Tenis Championship
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Por qué estos planes:
+#   web (starter):      always-on (la free spin-downea y arruina el login magic-link),
+#                        512 MB RAM alcanzan holgados para Next.js en modo producción.
+#   postgres (starter): el plan free de Postgres expira a los 90 días; el starter es
+#                        persistente, 256 MB RAM y 1 GB de disco — sobra para un
+#                        torneo con decenas de jugadores y partidos al mes.
+# Costo aproximado: ~USD 14/mes (7 web + 7 DB). Si necesitás escalar, subí el plan
+# del web primero.
+
+services:
+  - type: web
+    name: tenis-web
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_TRUST_HOST
+        value: "true"
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: AUTH_URL
+        sync: false # configurar al URL público del servicio (ej https://tenis-web.onrender.com)
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false # ej: "Tenis <no-reply@tudominio.com>"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tenis-db
+          property: connectionString
+
+databases:
+  - name: tenis-db
+    plan: starter
+    region: oregon
+    databaseName: tenis
+    user: tenis
+    # Retención y backups automáticos incluidos en el plan starter.
+    ipAllowList: [] # solo acceso interno desde el servicio web
