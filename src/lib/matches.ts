@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MATCHES_PER_MONTH, startOfMonthUTC, startOfNextMonthUTC } from "@/lib/utils";
+import { MATCHES_PER_MONTH, SEASON_START_UTC, currentQuotaWindow } from "@/lib/utils";
 
 const createSchema = z.object({
   opponentId: z.string().min(1, "Elige un rival"),
@@ -14,7 +14,11 @@ const createSchema = z.object({
     .min(1, "Elige fecha y hora")
     .transform((v) => new Date(v))
     .refine((d) => !Number.isNaN(d.getTime()), "Fecha inválida")
-    .refine((d) => d.getTime() > Date.now() - 1000 * 60 * 5, "La fecha debe ser futura"),
+    .refine((d) => d.getTime() > Date.now() - 1000 * 60 * 5, "La fecha debe ser futura")
+    .refine(
+      (d) => d.getTime() >= SEASON_START_UTC.getTime(),
+      "El torneo parte el 1 de mayo. Agenda una fecha desde el 1 de mayo.",
+    ),
   location: z.string().max(120).optional().nullable(),
 });
 
@@ -41,22 +45,28 @@ export async function createMatchAction(formData: FormData): Promise<CreateResul
   const opponent = await prisma.user.findUnique({ where: { id: opponentId } });
   if (!opponent) return { ok: false, error: "Rival no encontrado" };
 
-  const now = new Date();
-  const monthStart = startOfMonthUTC(now);
-  const monthEnd = startOfNextMonthUTC(now);
+  // Count against the month the match is played in, not when it was created.
+  // Otherwise an April-scheduled May match would eat April's (empty) quota
+  // and free up a second May slot.
+  const quota = scheduledAt.getTime() >= SEASON_START_UTC.getTime()
+    ? {
+        start: new Date(Date.UTC(scheduledAt.getUTCFullYear(), scheduledAt.getUTCMonth(), 1)),
+        end: new Date(Date.UTC(scheduledAt.getUTCFullYear(), scheduledAt.getUTCMonth() + 1, 1)),
+      }
+    : currentQuotaWindow();
 
   const used = await prisma.match.count({
     where: {
       schedulerId: userId,
       status: { in: ["SCHEDULED", "COMPLETED"] },
-      createdAt: { gte: monthStart, lt: monthEnd },
+      scheduledAt: { gte: quota.start, lt: quota.end },
     },
   });
 
   if (used >= MATCHES_PER_MONTH) {
     return {
       ok: false,
-      error: `Ya agendaste ${MATCHES_PER_MONTH} partidos este mes. Prueba el próximo mes.`,
+      error: `Ya agendaste ${MATCHES_PER_MONTH} partidos para ese mes. Prueba el siguiente.`,
     };
   }
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MATCHES_PER_MONTH, startOfMonthUTC, startOfNextMonthUTC } from "@/lib/utils";
+import { MATCHES_PER_MONTH, currentQuotaWindow } from "@/lib/utils";
 import { NewMatchForm } from "./NewMatchForm";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
 
@@ -11,7 +11,7 @@ export default async function NewMatchPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const now = new Date();
+  const quota = currentQuotaWindow();
   const [players, used] = await Promise.all([
     prisma.user.findMany({
       where: { NOT: { id: userId } },
@@ -22,12 +22,13 @@ export default async function NewMatchPage() {
       where: {
         schedulerId: userId,
         status: { in: ["SCHEDULED", "COMPLETED"] },
-        createdAt: { gte: startOfMonthUTC(now), lt: startOfNextMonthUTC(now) },
+        scheduledAt: { gte: quota.start, lt: quota.end },
       },
     }),
   ]);
 
   const remaining = Math.max(0, MATCHES_PER_MONTH - used);
+  const quotaLabel = new Intl.DateTimeFormat("es-CL", { month: "long" }).format(quota.start);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -43,8 +44,18 @@ export default async function NewMatchPage() {
             Agendar partido
           </h1>
           <p className="mt-2 text-white/55 text-sm">
-            Te quedan <strong className="text-white">{remaining}</strong> de {MATCHES_PER_MONTH}{" "}
-            partidos este mes.
+            {quota.preSeason ? (
+              <>
+                El torneo parte el <strong className="text-white">1 de mayo</strong>. Tienes{" "}
+                <strong className="text-white">{remaining}</strong> de {MATCHES_PER_MONTH} partidos
+                para {quotaLabel}.
+              </>
+            ) : (
+              <>
+                Te quedan <strong className="text-white">{remaining}</strong> de {MATCHES_PER_MONTH}{" "}
+                partidos para {quotaLabel}.
+              </>
+            )}
           </p>
         </div>
       </RevealOnScroll>

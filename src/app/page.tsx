@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { Landing } from "@/components/Landing";
 import { prisma } from "@/lib/prisma";
+import { SEASON_START_UTC } from "@/lib/utils";
 
 export default async function HomePage() {
   const session = await auth();
@@ -13,6 +14,7 @@ export default async function HomePage() {
   return (
     <Landing
       isAuthed={!!session}
+      preSeason={Date.now() < SEASON_START_UTC.getTime()}
       stats={{ players, matches, completed }}
     />
   );

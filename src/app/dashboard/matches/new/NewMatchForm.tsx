@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createMatchAction } from "@/lib/matches";
-import { displayName, initials } from "@/lib/utils";
+import { SEASON_START_UTC, displayName, initials } from "@/lib/utils";
 
 type Player = { id: string; name: string | null; email: string | null };
 
@@ -89,6 +89,7 @@ export function NewMatchForm({ players }: { players: Player[] }) {
             name="scheduledAt"
             type="datetime-local"
             required
+            min={toLocalInput(SEASON_START_UTC)}
             className="field"
             value={scheduledAt}
             onChange={(e) => setScheduledAt(e.target.value)}
@@ -144,8 +145,17 @@ function defaultDate() {
   const d = new Date();
   d.setDate(d.getDate() + 2);
   d.setHours(19, 0, 0, 0);
+  if (d.getTime() < SEASON_START_UTC.getTime()) {
+    // Pre-season: default to the first tournament day at 19:00 local.
+    d.setTime(SEASON_START_UTC.getTime());
+    d.setHours(19, 0, 0, 0);
+  }
+  return toLocalInput(d);
+}
+
+function toLocalInput(date: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(
-    d.getMinutes(),
-  )}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours(),
+  )}:${pad(date.getMinutes())}`;
 }

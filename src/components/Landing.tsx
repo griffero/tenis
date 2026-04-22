@@ -9,9 +9,11 @@ import { AnimatedCounter } from "./AnimatedCounter";
 
 export function Landing({
   isAuthed,
+  preSeason,
   stats,
 }: {
   isAuthed: boolean;
+  preSeason: boolean;
   stats: { players: number; matches: number; completed: number };
 }) {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -49,7 +51,7 @@ export function Landing({
                 <span className="absolute inset-0 rounded-full bg-ball animate-ping" />
                 <span className="relative inline-block h-2 w-2 rounded-full bg-ball" />
               </span>
-              Temporada abierta
+              {preSeason ? "Arranca el 1 de mayo" : "Temporada abierta"}
             </span>
           </motion.div>
 
@@ -91,8 +93,18 @@ export function Landing({
             transition={{ duration: 0.8, delay: 0.6 }}
             className="mt-8 max-w-xl text-lg text-white/70 leading-relaxed"
           >
-            Cada jugador programa <strong className="text-white">4 partidos por mes</strong>.
-            Sin grupos de WhatsApp, sin planillas. El torneo corre solo.
+            {preSeason ? (
+              <>
+                Arrancamos el <strong className="text-white">1 de mayo</strong>. Cada jugador
+                programa <strong className="text-white">4 partidos por mes</strong>, sin grupos
+                de WhatsApp ni planillas.
+              </>
+            ) : (
+              <>
+                Cada jugador programa <strong className="text-white">4 partidos por mes</strong>.
+                Sin grupos de WhatsApp, sin planillas. El torneo corre solo.
+              </>
+            )}
           </motion.p>
 
           <motion.div
