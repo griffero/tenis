@@ -20,7 +20,7 @@ export function magicLinkEmail(url: string, host: string) {
         </div>
       </div>
       <div style="padding:8px 40px 32px;color:#e9efe7">
-        <h1 style="font-size:24px;font-weight:700;margin:20px 0 8px;letter-spacing:-0.02em">Entrá a tu campeonato</h1>
+        <h1 style="font-size:24px;font-weight:700;margin:20px 0 8px;letter-spacing:-0.02em">Entra a tu campeonato</h1>
         <p style="color:#9aa79b;line-height:1.55;margin:0 0 24px">
           Toca el botón para acceder a <strong style="color:#d4ff3a">${safeHost}</strong>.
           Este enlace expira en 10 minutos y solo puede usarse una vez.
@@ -29,8 +29,8 @@ export function magicLinkEmail(url: string, host: string) {
           Ingresar &rarr;
         </a>
         <p style="color:#5e6b5f;font-size:13px;margin-top:28px;line-height:1.55">
-          Si no pediste este mail podés ignorarlo.<br/>
-          O copiá este link: <span style="color:#9aa79b;word-break:break-all">${url}</span>
+          Si no pediste este mail puedes ignorarlo.<br/>
+          O copia este link: <span style="color:#9aa79b;word-break:break-all">${url}</span>
         </p>
       </div>
       <div style="padding:16px;text-align:center;border-top:1px solid #1b2b1e;background:#0c140d">
@@ -41,5 +41,5 @@ export function magicLinkEmail(url: string, host: string) {
 }
 
 export function magicLinkText(url: string, host: string) {
-  return `Entrá a ${host} con este enlace (expira en 10 minutos):\n\n${url}\n`;
+  return `Entra a ${host} con este enlace (expira en 10 minutos):\n\n${url}\n`;
 }

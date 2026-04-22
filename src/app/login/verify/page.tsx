@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { VerifyAnimation } from "./VerifyAnimation";
 
-export const metadata = { title: "Revisá tu mail · Tenis Championship" };
+export const metadata = { title: "Revisa tu mail · Tenis Championship" };
 
 export default function VerifyPage() {
   return (

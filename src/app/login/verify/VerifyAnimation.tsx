@@ -39,7 +39,7 @@ export function VerifyAnimation() {
           transition={{ delay: 0.3, duration: 0.6 }}
           className="mt-8 text-2xl md:text-3xl font-semibold tracking-tight"
         >
-          Revisá tu <span className="text-ball">email</span>
+          Revisa tu <span className="text-ball">email</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
@@ -47,7 +47,7 @@ export function VerifyAnimation() {
           transition={{ delay: 0.5 }}
           className="mt-3 text-white/60 text-sm leading-relaxed"
         >
-          Te enviamos un enlace mágico. Tocalo desde el mismo dispositivo para entrar al torneo.
+          Te enviamos un enlace mágico. Tócalo desde el mismo dispositivo para entrar al torneo.
           <br />
           El enlace expira en 10 minutos.
         </motion.p>
@@ -57,7 +57,7 @@ export function VerifyAnimation() {
           transition={{ delay: 0.7 }}
           className="mt-8 text-xs text-white/35"
         >
-          ¿No te llegó? Mirá en spam o volvé a intentar.
+          ¿No te llegó? Revisa el spam o vuelve a intentar.
         </motion.div>
       </motion.div>
     </>

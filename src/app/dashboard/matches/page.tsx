@@ -45,7 +45,7 @@ export default async function MatchesPage({
           <div>
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Partidos</h1>
             <p className="mt-1.5 text-white/55 text-sm">
-              Agendá, confirmá y cargá resultados.
+              Agenda, confirma y carga resultados.
             </p>
           </div>
           <Link href="/dashboard/matches/new" className="btn-primary">

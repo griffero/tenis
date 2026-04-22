@@ -52,7 +52,7 @@ export function LeaderRow({
         </div>
         <div className="truncate text-sm font-medium">
           {name}
-          {me && <span className="ml-2 text-[10px] uppercase tracking-widest text-ball">vos</span>}
+          {me && <span className="ml-2 text-[10px] uppercase tracking-widest text-ball">tú</span>}
         </div>
       </div>
       <div className="text-center text-sm text-white/60 hidden md:block">{played}</div>

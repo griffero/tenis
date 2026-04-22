@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Tenis Championship — 4 partidos al mes",
   description:
-    "Agendá tus partidos, seguí el ranking y sentí el torneo. Cada jugador programa 4 partidos por mes.",
+    "Agenda tus partidos, sigue el ranking y vive el torneo. Cada jugador programa 4 partidos por mes.",
   openGraph: {
     title: "Tenis Championship",
     description: "4 partidos al mes. Un solo ranking.",

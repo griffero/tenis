@@ -63,9 +63,9 @@ export function Landing({
             }}
           >
             {[
-              ["Jugá.", "text-white"],
-              ["Agendá.", "text-white/90"],
-              ["Subí al ranking.", "text-shimmer"],
+              ["Juega.", "text-white"],
+              ["Agenda.", "text-white/90"],
+              ["Sube al ranking.", "text-shimmer"],
             ].map(([text, cls], i) => (
               <motion.span
                 key={i}
@@ -155,13 +155,13 @@ export function Landing({
           <div className="mt-14 grid gap-5 md:grid-cols-3">
             <Feature
               index={0}
-              title="Agendá tus partidos"
-              body="Elegí rival, fecha y cancha. Recibís confirmaciones por mail."
+              title="Agenda tus partidos"
+              body="Elige rival, fecha y cancha. Recibes confirmaciones por mail."
               icon={<CalendarIcon />}
             />
             <Feature
               index={1}
-              title="Cargá resultados"
+              title="Carga resultados"
               body="Set por set. El ranking se recalcula en vivo."
               icon={<ScoreIcon />}
             />
@@ -189,7 +189,7 @@ export function Landing({
             </h3>
             <p className="mt-6 text-white/65 leading-relaxed max-w-lg">
               Visualizaciones animadas, resultados en tiempo real, y un ranking
-              que se actualiza con cada punto que cargás.
+              que se actualiza con cada punto que cargas.
             </p>
           </motion.div>
           <motion.div
@@ -236,7 +236,7 @@ export function Landing({
               transition={{ duration: 0.9, delay: 0.2 }}
               className="mt-5 text-white/60"
             >
-              Ingresá con tu mail, agendá tu primer partido y empezá a sumar puntos.
+              Ingresa con tu mail, agenda tu primer partido y empieza a sumar puntos.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 12 }}

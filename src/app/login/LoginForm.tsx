@@ -46,7 +46,7 @@ export function LoginForm({
           Bienvenido al <span className="text-ball">torneo</span>
         </h1>
         <p className="mt-2 text-center text-sm text-white/55">
-          Ingresá tu mail, te mandamos un enlace mágico.
+          Ingresa tu mail, te mandamos un enlace mágico.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
@@ -60,7 +60,7 @@ export function LoginForm({
               type="email"
               required
               autoComplete="email"
-              placeholder="vos@club.com"
+              placeholder="tu@club.com"
               className="field"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -89,7 +89,7 @@ export function LoginForm({
               animate={{ opacity: 1, y: 0 }}
               className="text-sm text-red-300 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3"
             >
-              Algo salió mal. Volvé a intentar en unos segundos.
+              Algo salió mal. Vuelve a intentar en unos segundos.
             </motion.p>
           )}
         </form>

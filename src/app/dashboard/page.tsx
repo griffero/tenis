@@ -53,7 +53,7 @@ export default async function DashboardHome() {
         <section className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
             <div className="text-xs uppercase tracking-[0.14em] text-white/50">
-              {new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric" }).format(now)}
+              {new Intl.DateTimeFormat("es-CL", { month: "long", year: "numeric" }).format(now)}
             </div>
             <h1 className="text-3xl md:text-5xl font-semibold tracking-tight mt-1">
               Hola, <span className="text-ball">{name}</span>.
@@ -109,7 +109,7 @@ export default async function DashboardHome() {
               </div>
             ) : (
               <p className="text-sm text-white/55">
-                Todavía no jugaste partidos completados. ¡Arrancá!
+                Todavía no jugaste partidos completados. ¡Arranca!
               </p>
             )}
           </div>
@@ -126,9 +126,9 @@ export default async function DashboardHome() {
           </div>
           {upcoming.length === 0 ? (
             <div className="surface rounded-2xl px-6 py-10 text-center text-white/50 text-sm">
-              No tenés partidos agendados.{" "}
+              No tienes partidos agendados.{" "}
               <Link href="/dashboard/matches/new" className="text-ball hover:underline">
-                Agendá uno
+                Agenda uno
               </Link>
               .
             </div>

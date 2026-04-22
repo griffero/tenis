@@ -8,10 +8,10 @@ import { prisma } from "@/lib/prisma";
 import { MATCHES_PER_MONTH, startOfMonthUTC, startOfNextMonthUTC } from "@/lib/utils";
 
 const createSchema = z.object({
-  opponentId: z.string().min(1, "Elegí un rival"),
+  opponentId: z.string().min(1, "Elige un rival"),
   scheduledAt: z
     .string()
-    .min(1, "Elegí fecha y hora")
+    .min(1, "Elige fecha y hora")
     .transform((v) => new Date(v))
     .refine((d) => !Number.isNaN(d.getTime()), "Fecha inválida")
     .refine((d) => d.getTime() > Date.now() - 1000 * 60 * 5, "La fecha debe ser futura"),
@@ -36,7 +36,7 @@ export async function createMatchAction(formData: FormData): Promise<CreateResul
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   }
   const { opponentId, scheduledAt, location } = parsed.data;
-  if (opponentId === userId) return { ok: false, error: "No podés jugar contra vos mismo" };
+  if (opponentId === userId) return { ok: false, error: "No puedes jugar contra ti mismo" };
 
   const opponent = await prisma.user.findUnique({ where: { id: opponentId } });
   if (!opponent) return { ok: false, error: "Rival no encontrado" };
@@ -56,7 +56,7 @@ export async function createMatchAction(formData: FormData): Promise<CreateResul
   if (used >= MATCHES_PER_MONTH) {
     return {
       ok: false,
-      error: `Ya agendaste ${MATCHES_PER_MONTH} partidos este mes. Probá el próximo mes.`,
+      error: `Ya agendaste ${MATCHES_PER_MONTH} partidos este mes. Prueba el próximo mes.`,
     };
   }
 
@@ -104,7 +104,7 @@ export async function reportResultAction(formData: FormData) {
   const match = await prisma.match.findUnique({ where: { id: matchId } });
   if (!match) return { ok: false as const, error: "Partido no existe" };
   if (match.homeId !== userId && match.awayId !== userId) {
-    return { ok: false as const, error: "No sos parte de este partido" };
+    return { ok: false as const, error: "No eres parte de este partido" };
   }
 
   let homeSets = 0;

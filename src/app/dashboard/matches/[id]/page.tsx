@@ -109,7 +109,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             <div>
               <div className="text-sm font-medium">¿Se canceló el partido?</div>
               <div className="text-xs text-white/50">
-                Solo vos (quien lo agendó) podés cancelarlo.
+                Solo tú (quien lo agendó) puedes cancelarlo.
               </div>
             </div>
             <button className="btn-danger">Cancelar partido</button>

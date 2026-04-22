@@ -21,13 +21,13 @@ Reglas del torneo:
 ## Correr localmente
 
 ```bash
-cp .env.example .env          # completá RESEND_API_KEY y AUTH_SECRET
+cp .env.example .env          # completa RESEND_API_KEY y AUTH_SECRET
 npm install
 npx prisma migrate dev --name init
 npm run dev
 ```
 
-Abrí http://localhost:3000 e ingresá con tu mail.
+Abre http://localhost:3000 e ingresa con tu mail.
 
 En desarrollo, si no configuraste `RESEND_API_KEY`, el enlace mágico se imprime
 en la consola del server.
@@ -60,14 +60,14 @@ en Render y apuntar al repo. Crea:
   (el usuario abre el link y se encuentra con un arranque en frío de 30 s, y el
   token puede haber expirado). Starter mantiene la instancia despierta.
 
-Total: ~USD 14/mes. Si el torneo crece, subí el web a Standard.
+Total: ~USD 13/mes. Si el torneo crece, sube el web a Standard.
 
 ### Pasos
 
-1. Creá una cuenta en https://render.com y conectá tu repo de GitHub.
-2. Click en **New → Blueprint** y elegí este repo.
+1. Crea una cuenta en https://render.com y conecta tu repo de GitHub.
+2. Click en **New → Blueprint** y elige este repo.
 3. Render detectará `render.yaml` y creará los dos servicios.
-4. Al completar el deploy, configurá las variables `sync: false`:
+4. Al completar el deploy, configura las variables `sync: false`:
    - `AUTH_URL` → la URL pública que te dio Render (ej. `https://tenis-web.onrender.com`).
    - `RESEND_API_KEY` → tu key de https://resend.com/api-keys.
    - `EMAIL_FROM` → remitente verificado, ej. `Tenis <no-reply@tudominio.com>`.
@@ -75,7 +75,7 @@ Total: ~USD 14/mes. Si el torneo crece, subí el web a Standard.
 
 ### Primer login
 
-- Ingresá tu mail en `/login`, te llega el link de Resend.
+- Ingresa tu mail en `/login`, te llega el link de Resend.
 - El primer usuario se crea automáticamente (no hay flujo de registro aparte).
 - Cada jugador que ingrese queda disponible como rival en el selector de partidos.
 
@@ -111,4 +111,4 @@ npm run db:push     # push schema sin migración (dev)
 npm run db:studio   # Prisma Studio
 ```
 
-Disfrutá el torneo 🎾
+Disfruta el torneo 🎾
