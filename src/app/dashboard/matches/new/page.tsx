@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MATCHES_PER_MONTH, currentQuotaWindow } from "@/lib/utils";
+import { MATCHES_PER_MONTH, quotaWindowFor } from "@/lib/utils";
 import { NewMatchForm } from "./NewMatchForm";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
 
@@ -11,7 +11,7 @@ export default async function NewMatchPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const quota = currentQuotaWindow();
+  const quota = quotaWindowFor();
   const [players, used] = await Promise.all([
     prisma.user.findMany({
       where: { NOT: { id: userId } },
@@ -28,7 +28,7 @@ export default async function NewMatchPage() {
   ]);
 
   const remaining = Math.max(0, MATCHES_PER_MONTH - used);
-  const quotaLabel = new Intl.DateTimeFormat("es-CL", { month: "long" }).format(quota.start);
+  const quotaLabel = new Intl.DateTimeFormat("es-CL", { month: "long" }).format(quota.attributedTo);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -48,7 +48,7 @@ export default async function NewMatchPage() {
               <>
                 El torneo parte el <strong className="text-white">1 de mayo</strong>. Tienes{" "}
                 <strong className="text-white">{remaining}</strong> de {MATCHES_PER_MONTH} partidos
-                para {quotaLabel}.
+                para {quotaLabel} — lo que agendes para abril también cuenta acá.
               </>
             ) : (
               <>

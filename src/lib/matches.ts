@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MATCHES_PER_MONTH, SEASON_START_UTC, currentQuotaWindow } from "@/lib/utils";
+import { MATCHES_PER_MONTH, quotaWindowFor } from "@/lib/utils";
 
 const createSchema = z.object({
   opponentId: z.string().min(1, "Elige un rival"),
@@ -14,11 +14,7 @@ const createSchema = z.object({
     .min(1, "Elige fecha y hora")
     .transform((v) => new Date(v))
     .refine((d) => !Number.isNaN(d.getTime()), "Fecha inválida")
-    .refine((d) => d.getTime() > Date.now() - 1000 * 60 * 5, "La fecha debe ser futura")
-    .refine(
-      (d) => d.getTime() >= SEASON_START_UTC.getTime(),
-      "El torneo parte el 1 de mayo. Agenda una fecha desde el 1 de mayo.",
-    ),
+    .refine((d) => d.getTime() > Date.now() - 1000 * 60 * 5, "La fecha debe ser futura"),
   location: z.string().max(120).optional().nullable(),
 });
 
@@ -45,16 +41,10 @@ export async function createMatchAction(formData: FormData): Promise<CreateResul
   const opponent = await prisma.user.findUnique({ where: { id: opponentId } });
   if (!opponent) return { ok: false, error: "Rival no encontrado" };
 
-  // Count against the month the match is played in, not when it was created.
-  // Otherwise an April-scheduled May match would eat April's (empty) quota
-  // and free up a second May slot.
-  const quota = scheduledAt.getTime() >= SEASON_START_UTC.getTime()
-    ? {
-        start: new Date(Date.UTC(scheduledAt.getUTCFullYear(), scheduledAt.getUTCMonth(), 1)),
-        end: new Date(Date.UTC(scheduledAt.getUTCFullYear(), scheduledAt.getUTCMonth() + 1, 1)),
-      }
-    : currentQuotaWindow();
-
+  // Count against the attributed quota month. Pre-season matches (scheduledAt
+  // before SEASON_START) are attributed to the season's first month along
+  // with any already-scheduled first-month matches.
+  const quota = quotaWindowFor(scheduledAt);
   const used = await prisma.match.count({
     where: {
       schedulerId: userId,

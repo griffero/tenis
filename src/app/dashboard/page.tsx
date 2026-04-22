@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MATCHES_PER_MONTH, displayName, currentQuotaWindow } from "@/lib/utils";
+import { MATCHES_PER_MONTH, displayName, quotaWindowFor } from "@/lib/utils";
 import { MonthlyQuota } from "@/components/MonthlyQuota";
 import { MatchCard } from "@/components/MatchCard";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
@@ -11,7 +11,7 @@ export default async function DashboardHome() {
   const userId = session!.user.id;
 
   const now = new Date();
-  const quota = currentQuotaWindow(now);
+  const quota = quotaWindowFor(now);
 
   const [scheduledThisMonth, upcoming, recent, rank] = await Promise.all([
     prisma.match.count({
@@ -45,7 +45,7 @@ export default async function DashboardHome() {
 
   const remaining = Math.max(0, MATCHES_PER_MONTH - scheduledThisMonth);
   const name = displayName(session!.user);
-  const quotaLabel = new Intl.DateTimeFormat("es-CL", { month: "long" }).format(quota.start);
+  const quotaLabel = new Intl.DateTimeFormat("es-CL", { month: "long" }).format(quota.attributedTo);
 
   return (
     <div className="space-y-8">
@@ -64,7 +64,9 @@ export default async function DashboardHome() {
               {quota.preSeason ? (
                 <>
                   El torneo parte el <strong className="text-white">1 de mayo</strong>. Tienes{" "}
-                  <strong className="text-white">{remaining}</strong> partidos para agendar para ese mes.
+                  <strong className="text-white">{remaining}</strong>{" "}
+                  {remaining === 1 ? "partido" : "partidos"} para {quotaLabel} — si juegas en
+                  abril, también cuenta acá.
                 </>
               ) : (
                 <>
@@ -91,7 +93,7 @@ export default async function DashboardHome() {
             <MonthlyQuota used={Math.min(scheduledThisMonth, MATCHES_PER_MONTH)} total={MATCHES_PER_MONTH} />
             <p className="mt-5 text-sm text-white/55">
               {quota.preSeason
-                ? `El torneo arranca el 1 de mayo. Ya puedes agendar tus ${MATCHES_PER_MONTH} partidos para esa fecha en adelante.`
+                ? `El torneo arranca el 1 de mayo. Los partidos que juegues en abril se cuentan contra el cupo de ${quotaLabel}.`
                 : `Cada jugador programa ${MATCHES_PER_MONTH} partidos por mes. El cupo se renueva el día 1.`}
             </p>
           </div>
