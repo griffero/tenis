@@ -7,8 +7,8 @@ Reglas del torneo:
 
 - Cada jugador programa **4 partidos por mes** (cupo que se renueva el día 1).
 - Cada partido se agenda contra otro jugador, día y hora, y opcionalmente cancha.
-- Los resultados se cargan set por set y alimentan un ranking global.
-- Ranking: 3 puntos por victoria. Desempate por diferencia de sets.
+- Cada partido se juega a **un set de 9 games** (escalerilla). En 8-8 define un tiebreak (9-8).
+- Ranking: 3 puntos por victoria. Desempate por diferencia de games.
 
 ## Stack
 

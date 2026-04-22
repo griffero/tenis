@@ -85,17 +85,20 @@ export async function createMatchAction(formData: FormData): Promise<CreateResul
   return { ok: true, matchId: match.id };
 }
 
+// One set to 9 games (escalerilla / ladder format). Tiebreak at 8-8 is
+// counted as 9-8, so loser games can go up to 8. Winner must reach 9.
+const GAMES_TO_WIN = 9;
+
 const scoreSchema = z.object({
   matchId: z.string(),
   sets: z
     .array(
       z.object({
-        home: z.number().int().min(0).max(7),
-        away: z.number().int().min(0).max(7),
+        home: z.number().int().min(0).max(GAMES_TO_WIN),
+        away: z.number().int().min(0).max(GAMES_TO_WIN),
       }),
     )
-    .min(1)
-    .max(5),
+    .length(1),
 });
 
 export async function reportResultAction(formData: FormData) {
@@ -117,17 +120,19 @@ export async function reportResultAction(formData: FormData) {
     return { ok: false as const, error: "No eres parte de este partido" };
   }
 
-  let homeSets = 0;
-  let awaySets = 0;
-  for (const s of sets) {
-    if (s.home === s.away) return { ok: false as const, error: "No hay sets empatados" };
-    if (s.home > s.away) homeSets += 1;
-    else awaySets += 1;
+  const [set] = sets;
+  if (set.home === set.away) {
+    return { ok: false as const, error: "No puede quedar empatado" };
   }
-  if (homeSets === awaySets) {
-    return { ok: false as const, error: "Tiene que haber un ganador" };
+  const winnerGames = Math.max(set.home, set.away);
+  const loserGames = Math.min(set.home, set.away);
+  if (winnerGames !== GAMES_TO_WIN) {
+    return { ok: false as const, error: "El ganador tiene que llegar a 9 games" };
   }
-  const winnerId = homeSets > awaySets ? match.homeId : match.awayId;
+  if (loserGames > GAMES_TO_WIN - 1) {
+    return { ok: false as const, error: "El perdedor no puede pasar de 8 games" };
+  }
+  const winnerId = set.home > set.away ? match.homeId : match.awayId;
 
   await prisma.match.update({
     where: { id: matchId },

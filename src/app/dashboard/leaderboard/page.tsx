@@ -25,9 +25,9 @@ export default async function LeaderboardPage() {
 
   const stats = new Map<
     string,
-    { wins: number; losses: number; setsWon: number; setsLost: number }
+    { wins: number; losses: number; gamesWon: number; gamesLost: number }
   >();
-  for (const u of users) stats.set(u.id, { wins: 0, losses: 0, setsWon: 0, setsLost: 0 });
+  for (const u of users) stats.set(u.id, { wins: 0, losses: 0, gamesWon: 0, gamesLost: 0 });
 
   for (const m of completedMatches) {
     if (!m.winnerId) continue;
@@ -40,21 +40,21 @@ export default async function LeaderboardPage() {
     if (m.scoreJson) {
       try {
         const sets = JSON.parse(m.scoreJson) as Array<{ home: number; away: number }>;
-        let hw = 0,
-          aw = 0;
+        let hg = 0;
+        let ag = 0;
         for (const s of sets) {
-          hw += s.home;
-          aw += s.away;
+          hg += s.home;
+          ag += s.away;
         }
         const home = stats.get(m.homeId);
         const away = stats.get(m.awayId);
         if (home) {
-          home.setsWon += hw;
-          home.setsLost += aw;
+          home.gamesWon += hg;
+          home.gamesLost += ag;
         }
         if (away) {
-          away.setsWon += aw;
-          away.setsLost += hw;
+          away.gamesWon += ag;
+          away.gamesLost += hg;
         }
       } catch {
         // ignore parse errors
@@ -64,7 +64,7 @@ export default async function LeaderboardPage() {
 
   const ranked = users
     .map((u) => {
-      const s = stats.get(u.id) ?? { wins: 0, losses: 0, setsWon: 0, setsLost: 0 };
+      const s = stats.get(u.id) ?? { wins: 0, losses: 0, gamesWon: 0, gamesLost: 0 };
       return {
         ...u,
         ...s,
@@ -76,8 +76,8 @@ export default async function LeaderboardPage() {
     .sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       if (b.wins !== a.wins) return b.wins - a.wins;
-      const da = a.setsWon - a.setsLost;
-      const db = b.setsWon - b.setsLost;
+      const da = a.gamesWon - a.gamesLost;
+      const db = b.gamesWon - b.gamesLost;
       return db - da;
     });
 
@@ -87,7 +87,7 @@ export default async function LeaderboardPage() {
         <div>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Ranking</h1>
           <p className="mt-2 text-white/55 text-sm">
-            3 puntos por partido ganado. Desempate por diferencia de sets.
+            3 puntos por partido ganado. Desempate por diferencia de games.
           </p>
         </div>
       </RevealOnScroll>

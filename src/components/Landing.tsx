@@ -174,7 +174,7 @@ export function Landing({
             <Feature
               index={1}
               title="Carga resultados"
-              body="Set por set. El ranking se recalcula en vivo."
+              body="Un set a 9 games. El ranking se recalcula en vivo."
               icon={<ScoreIcon />}
             />
             <Feature
