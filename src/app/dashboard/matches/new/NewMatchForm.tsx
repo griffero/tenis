@@ -35,7 +35,7 @@ export function NewMatchForm({ players }: { players: Player[] }) {
         <label className="label">Rival</label>
         {players.length === 0 ? (
           <p className="text-sm text-white/55">
-            Todavía no hay otros jugadores registrados. Invitá a alguien a ingresar.
+            Todavía no hay otros jugadores registrados. Invita a alguien a ingresar.
           </p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">

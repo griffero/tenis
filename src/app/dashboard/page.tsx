@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MATCHES_PER_MONTH, displayName, quotaWindowFor } from "@/lib/utils";
+import {
+  MATCHES_PER_MONTH,
+  attributeMatchesToQuotaMonths,
+  currentQuotaMonth,
+  displayName,
+  isPreSeason,
+  monthKeyUTC,
+} from "@/lib/utils";
 import { MonthlyQuota } from "@/components/MonthlyQuota";
 import { MatchCard } from "@/components/MatchCard";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
@@ -11,15 +18,16 @@ export default async function DashboardHome() {
   const userId = session!.user.id;
 
   const now = new Date();
-  const quota = quotaWindowFor(now);
+  const currentMonth = currentQuotaMonth(now);
+  const preSeason = isPreSeason(now);
 
-  const [scheduledThisMonth, upcoming, recent, rank] = await Promise.all([
-    prisma.match.count({
+  const [userScheduled, upcoming, recent, rank] = await Promise.all([
+    prisma.match.findMany({
       where: {
         schedulerId: userId,
         status: { in: ["SCHEDULED", "COMPLETED"] },
-        scheduledAt: { gte: quota.start, lt: quota.end },
       },
+      select: { id: true, scheduledAt: true, createdAt: true },
     }),
     prisma.match.findMany({
       where: {
@@ -43,9 +51,11 @@ export default async function DashboardHome() {
     computeMyRank(userId),
   ]);
 
+  const { perMonth } = attributeMatchesToQuotaMonths(userScheduled);
+  const scheduledThisMonth = perMonth.get(monthKeyUTC(currentMonth)) ?? 0;
   const remaining = Math.max(0, MATCHES_PER_MONTH - scheduledThisMonth);
   const name = displayName(session!.user);
-  const quotaLabel = new Intl.DateTimeFormat("es-CL", { month: "long" }).format(quota.attributedTo);
+  const quotaLabel = new Intl.DateTimeFormat("es-CL", { month: "long" }).format(currentMonth);
 
   return (
     <div className="space-y-8">
@@ -53,7 +63,7 @@ export default async function DashboardHome() {
         <section className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
             <div className="text-xs uppercase tracking-[0.14em] text-white/50">
-              {quota.preSeason
+              {preSeason
                 ? "Pretemporada"
                 : new Intl.DateTimeFormat("es-CL", { month: "long", year: "numeric" }).format(now)}
             </div>
@@ -61,17 +71,18 @@ export default async function DashboardHome() {
               Hola, <span className="text-ball">{name}</span>.
             </h1>
             <p className="mt-2 text-white/60">
-              {quota.preSeason ? (
+              {preSeason ? (
                 <>
                   El torneo parte el <strong className="text-white">1 de mayo</strong>. Tienes{" "}
                   <strong className="text-white">{remaining}</strong>{" "}
-                  {remaining === 1 ? "partido" : "partidos"} para {quotaLabel} — si juegas en
-                  abril, también cuenta acá.
+                  {remaining === 1 ? "partido libre" : "partidos libres"} para {quotaLabel} —
+                  si juegas en abril, también cuenta acá.
                 </>
               ) : (
                 <>
                   Te quedan <strong className="text-white">{remaining}</strong>{" "}
-                  {remaining === 1 ? "partido" : "partidos"} para agendar en {quotaLabel}.
+                  {remaining === 1 ? "partido" : "partidos"} en {quotaLabel}.
+                  {remaining === 0 && " Los próximos caen al mes siguiente."}
                 </>
               )}
             </p>
@@ -88,13 +99,13 @@ export default async function DashboardHome() {
         <RevealOnScroll delay={0.05} className="md:col-span-2">
           <div className="surface rounded-3xl p-6 md:p-8">
             <h2 className="text-sm uppercase tracking-[0.14em] text-white/50 mb-4">
-              {quota.preSeason ? `Cupo de ${quotaLabel}` : "Cupo mensual"}
+              {preSeason ? `Cupo de ${quotaLabel}` : "Cupo mensual"}
             </h2>
             <MonthlyQuota used={Math.min(scheduledThisMonth, MATCHES_PER_MONTH)} total={MATCHES_PER_MONTH} />
             <p className="mt-5 text-sm text-white/55">
-              {quota.preSeason
+              {preSeason
                 ? `El torneo arranca el 1 de mayo. Los partidos que juegues en abril se cuentan contra el cupo de ${quotaLabel}.`
-                : `Cada jugador programa ${MATCHES_PER_MONTH} partidos por mes. El cupo se renueva el día 1.`}
+                : `Cada jugador programa ${MATCHES_PER_MONTH} partidos por mes. Si agendas de más, los extra caen al mes siguiente.`}
             </p>
           </div>
         </RevealOnScroll>

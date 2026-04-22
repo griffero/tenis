@@ -34,39 +34,63 @@ export const MATCHES_PER_MONTH = 4;
 // Shift this forward if the start needs to move; everything else derives from it.
 export const SEASON_START_UTC = new Date(Date.UTC(2026, 4, 1, 0, 0, 0, 0));
 
-// Returns the [start, end) scheduledAt window that attributes to the same
-// monthly quota as `date`. Any match scheduled before SEASON_START_UTC is
-// attributed to the season's first month (so an April-scheduled match
-// counts against May's quota). Pass `now` to get the window for the
-// current user's quota; pass a scheduledAt value to get the window for
-// the quota a specific match would consume.
-export function quotaWindowFor(date: Date = new Date()) {
-  const preSeason = date.getTime() < SEASON_START_UTC.getTime();
-  const seasonMonthStart = startOfMonthUTC(SEASON_START_UTC);
-  const seasonMonthEnd = startOfNextMonthUTC(SEASON_START_UTC);
+// The quota month a user is currently playing under. Before the season
+// starts, we're already operating against the season's first month.
+export function currentQuotaMonth(now: Date = new Date()) {
+  if (now.getTime() < SEASON_START_UTC.getTime()) return startOfMonthUTC(SEASON_START_UTC);
+  return startOfMonthUTC(now);
+}
 
-  if (preSeason) {
-    return {
-      // Epoch lower bound catches any pre-season date.
-      start: new Date(0),
-      end: seasonMonthEnd,
-      attributedTo: seasonMonthStart,
-      preSeason: true,
-    };
+export function isPreSeason(now: Date = new Date()) {
+  return now.getTime() < SEASON_START_UTC.getTime();
+}
+
+export function monthKeyUTC(date: Date) {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+// Attributes each of a user's non-cancelled matches to a quota month,
+// spilling overflow forward. Rules:
+//   - Pre-season scheduledAt is clamped to the season's first month.
+//   - Matches are processed in createdAt order; each lands on the
+//     earliest month >= its natural month that still has capacity.
+//     createdAt order keeps "the one I just added is the one that
+//     spills" intuitive, and lets existing matches stay put when later
+//     ones are added.
+//   - Fully deterministic — cancellations naturally let later matches
+//     roll back when the function is re-run on the remaining set.
+// Returns per-match attribution and per-month counts (month keys from
+// monthKeyUTC). Never rejects: with an infinite month line, overflow
+// always finds a home.
+export function attributeMatchesToQuotaMonths(
+  matches: Array<{ id: string; scheduledAt: Date; createdAt: Date }>,
+  capacity: number = MATCHES_PER_MONTH,
+) {
+  const sorted = [...matches].sort(
+    (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+  );
+  const seasonFirstMonth = startOfMonthUTC(SEASON_START_UTC);
+  const perMonth = new Map<string, number>();
+  const perMatch = new Map<string, Date>();
+
+  for (const m of sorted) {
+    const natural = startOfMonthUTC(m.scheduledAt);
+    let target =
+      natural.getTime() < seasonFirstMonth.getTime() ? new Date(seasonFirstMonth) : natural;
+    // Guard against pathological input — capacity=0 or millions of matches.
+    for (let steps = 0; steps < 240; steps++) {
+      const key = monthKeyUTC(target);
+      const count = perMonth.get(key) ?? 0;
+      if (count < capacity) {
+        perMonth.set(key, count + 1);
+        perMatch.set(m.id, target);
+        break;
+      }
+      target = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 1));
+    }
   }
 
-  const monthStart = startOfMonthUTC(date);
-  const monthEnd = startOfNextMonthUTC(date);
-  const isFirstSeasonMonth = monthStart.getTime() === seasonMonthStart.getTime();
-
-  return {
-    // Once we're in the first season month, pre-season matches roll into
-    // this window (they were attributed here).
-    start: isFirstSeasonMonth ? new Date(0) : monthStart,
-    end: monthEnd,
-    attributedTo: monthStart,
-    preSeason: false,
-  };
+  return { perMatch, perMonth };
 }
 
 export function displayName(user: { name?: string | null; email?: string | null }) {

@@ -3,7 +3,13 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { cancelMatchAction } from "@/lib/matches";
-import { displayName, formatDateEs, initials } from "@/lib/utils";
+import {
+  attributeMatchesToQuotaMonths,
+  displayName,
+  formatDateEs,
+  initials,
+  startOfMonthUTC,
+} from "@/lib/utils";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
 import { Court } from "@/components/Court";
 import { ScoreEntry } from "./ScoreEntry";
@@ -24,6 +30,23 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const canScore = meIsParticipant && match.status === "SCHEDULED";
   const score = match.scoreJson
     ? (JSON.parse(match.scoreJson) as Array<{ home: number; away: number }>)
+    : null;
+
+  // Figure out which quota month this match consumes for its scheduler.
+  const schedulerMatches = await prisma.match.findMany({
+    where: {
+      schedulerId: match.schedulerId,
+      status: { in: ["SCHEDULED", "COMPLETED"] },
+    },
+    select: { id: true, scheduledAt: true, createdAt: true },
+  });
+  const { perMatch } = attributeMatchesToQuotaMonths(schedulerMatches);
+  const attributedMonth = perMatch.get(match.id);
+  const naturalMonth = startOfMonthUTC(match.scheduledAt);
+  const spilled =
+    attributedMonth && attributedMonth.getTime() !== naturalMonth.getTime();
+  const attributedLabel = attributedMonth
+    ? new Intl.DateTimeFormat("es-CL", { month: "long", year: "numeric" }).format(attributedMonth)
     : null;
 
   async function doCancel() {
@@ -117,8 +140,15 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         </RevealOnScroll>
       )}
 
-      <div className="text-center text-xs text-white/35">
-        Agendado por {displayName(match.scheduler)}
+      <div className="text-center text-xs text-white/35 space-y-1">
+        <div>Agendado por {displayName(match.scheduler)}</div>
+        {attributedLabel && match.status !== "CANCELLED" && (
+          <div>
+            {spilled
+              ? `Cuenta para el cupo de ${attributedLabel} (se corrió por cupo lleno).`
+              : `Cuenta para el cupo de ${attributedLabel}.`}
+          </div>
+        )}
       </div>
     </div>
   );

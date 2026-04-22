@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MATCHES_PER_MONTH, quotaWindowFor } from "@/lib/utils";
+import { attributeMatchesToQuotaMonths, monthKeyUTC } from "@/lib/utils";
 
 const createSchema = z.object({
   opponentId: z.string().min(1, "Elige un rival"),
@@ -19,7 +19,7 @@ const createSchema = z.object({
 });
 
 export type CreateResult =
-  | { ok: true; matchId: string }
+  | { ok: true; matchId: string; attributedMonth: string }
   | { ok: false; error: string };
 
 export async function createMatchAction(formData: FormData): Promise<CreateResult> {
@@ -41,25 +41,6 @@ export async function createMatchAction(formData: FormData): Promise<CreateResul
   const opponent = await prisma.user.findUnique({ where: { id: opponentId } });
   if (!opponent) return { ok: false, error: "Rival no encontrado" };
 
-  // Count against the attributed quota month. Pre-season matches (scheduledAt
-  // before SEASON_START) are attributed to the season's first month along
-  // with any already-scheduled first-month matches.
-  const quota = quotaWindowFor(scheduledAt);
-  const used = await prisma.match.count({
-    where: {
-      schedulerId: userId,
-      status: { in: ["SCHEDULED", "COMPLETED"] },
-      scheduledAt: { gte: quota.start, lt: quota.end },
-    },
-  });
-
-  if (used >= MATCHES_PER_MONTH) {
-    return {
-      ok: false,
-      error: `Ya agendaste ${MATCHES_PER_MONTH} partidos para ese mes. Prueba el siguiente.`,
-    };
-  }
-
   const match = await prisma.match.create({
     data: {
       schedulerId: userId,
@@ -70,9 +51,24 @@ export async function createMatchAction(formData: FormData): Promise<CreateResul
     },
   });
 
+  // Monthly quota now spills forward — a match scheduled into a full month
+  // lands on the next month with capacity. Attribution is recomputed from
+  // scratch against the user's full non-cancelled set, so cancellations
+  // naturally compact the later entries back.
+  const userMatches = await prisma.match.findMany({
+    where: { schedulerId: userId, status: { in: ["SCHEDULED", "COMPLETED"] } },
+    select: { id: true, scheduledAt: true, createdAt: true },
+  });
+  const { perMatch } = attributeMatchesToQuotaMonths(userMatches);
+  const attributed = perMatch.get(match.id);
+
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/matches");
-  return { ok: true, matchId: match.id };
+  return {
+    ok: true,
+    matchId: match.id,
+    attributedMonth: attributed ? monthKeyUTC(attributed) : "",
+  };
 }
 
 // One set to 9 games (escalerilla / ladder format). Tiebreak at 8-8 is
